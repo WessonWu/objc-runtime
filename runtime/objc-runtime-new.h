@@ -413,13 +413,23 @@ struct stub_class_t {
 **********************************************************************/
 template <typename Element, typename List, uint32_t FlagMask>
 struct entsize_list_tt {
+    /// entsize_list_tt的结构是header+array
+    /// header：entsizeAndFlags(4Byte) + count(4Byte)
+    /// array: [Element]
+    
+    /// 元素的大小 & flags 例如method_t占用24个字节
     uint32_t entsizeAndFlags;
-    uint32_t count;
-    Element first;
+    uint32_t count; // 列表个数
+    Element first; // method_t
+    // Element second;
+    // ...
 
+    // 元素的大小
     uint32_t entsize() const {
         return entsizeAndFlags & ~FlagMask;
     }
+    
+    // 标志
     uint32_t flags() const {
         return entsizeAndFlags & FlagMask;
     }
@@ -433,10 +443,12 @@ struct entsize_list_tt {
         return getOrEnd(i);
     }
 
+    // 当前entsize_list_tt占用的大小
     size_t byteSize() const {
         return byteSize(entsize(), count);
     }
     
+    // 计算entsize_list_tt有count个元素时所占用的大小
     static size_t byteSize(uint32_t entsize, uint32_t count) {
         return sizeof(entsize_list_tt) + (count-1)*entsize;
     }
@@ -450,7 +462,8 @@ struct entsize_list_tt {
     }
 
     struct iterator;
-    const iterator begin() const { 
+    const iterator begin() const {
+        // iterator(*static_cast<const method_list_t*>(this), 0)
         return iterator(*static_cast<const List*>(this), 0); 
     }
     iterator begin() { 
@@ -463,6 +476,7 @@ struct entsize_list_tt {
         return iterator(*static_cast<const List*>(this), count); 
     }
 
+    // entsize_list_tt迭代器，方便遍历列表
     struct iterator {
         uint32_t entsize;
         uint32_t index;  // keeping track of this saves a divide in operator-
@@ -482,6 +496,7 @@ struct entsize_list_tt {
             , element(&list.getOrEnd(start))
         { }
 
+        // 下个method_t(偏移24Byte) 注：(uint8_t *)8个字节
         const iterator& operator += (ptrdiff_t delta) {
             element = (Element*)((uint8_t *)element + delta*entsize);
             index += (int32_t)delta;
@@ -535,10 +550,12 @@ struct entsize_list_tt {
 
 
 struct method_t {
-    SEL name;
-    const char *types;
-    MethodListIMP imp;
+    // typedef uintptr_t SEL; 8个字节
+    SEL name; //方法名
+    const char *types; // 类型
+    MethodListIMP imp; // 具体实现
 
+    // method_list_t根据SEL值从小到达排序
     struct SortBySELAddress :
         public std::binary_function<const method_t&,
                                     const method_t&, bool>
@@ -769,8 +786,8 @@ class list_array_tt {
 
  protected:
     class iterator {
-        List **lists;
-        List **listsEnd;
+        List **lists; // method_list_t **lists;
+        List **listsEnd; // method_list_t **listsEnd;
         typename List::iterator m, mEnd;
 
      public:
