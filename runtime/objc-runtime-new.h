@@ -566,6 +566,7 @@ struct method_t {
     };
 };
 
+// 实例变量
 struct ivar_t {
 #if __x86_64__
     // *offset was originally 64-bit on some x86_64 platforms.
@@ -575,9 +576,9 @@ struct ivar_t {
     // Some code uses all 64 bits. class_addIvar() over-allocates the 
     // offset for their benefit.
 #endif
-    int32_t *offset;
-    const char *name;
-    const char *type;
+    int32_t *offset; // 偏移量
+    const char *name; // 变量名称
+    const char *type; //变量类型
     // alignment is sometimes -1; use alignment() instead
     uint32_t alignment_raw;
     uint32_t size;
@@ -588,12 +589,15 @@ struct ivar_t {
     }
 };
 
+// 属性
 struct property_t {
-    const char *name;
-    const char *attributes;
+    const char *name; // 属性名称
+    const char *attributes; // 属性Attributes(strong, copy, weak, assign ...)
 };
 
 // Two bits of entsize are used for fixup markers.
+// entsize的两位用于固定标记。 0b11
+// 方法列表
 struct method_list_t : entsize_list_tt<method_t, method_list_t, 0x3> {
     bool isUniqued() const;
     bool isFixedUp() const;
@@ -607,12 +611,14 @@ struct method_list_t : entsize_list_tt<method_t, method_list_t, 0x3> {
     }
 };
 
+// 实例变量列表
 struct ivar_list_t : entsize_list_tt<ivar_t, ivar_list_t, 0> {
     bool containsIvar(Ivar ivar) const {
         return (ivar >= (Ivar)&*begin()  &&  ivar < (Ivar)&*end());
     }
 };
 
+// 属性列表
 struct property_list_t : entsize_list_tt<property_t, property_list_t, 0> {
 };
 
@@ -630,10 +636,10 @@ typedef uintptr_t protocol_ref_t;  // protocol_t *, but unremapped
 struct protocol_t : objc_object {
     const char *mangledName;
     struct protocol_list_t *protocols;
-    method_list_t *instanceMethods;
-    method_list_t *classMethods;
-    method_list_t *optionalInstanceMethods;
-    method_list_t *optionalClassMethods;
+    method_list_t *instanceMethods; // @requried 实例方法列表
+    method_list_t *classMethods; // @required 类方法列表
+    method_list_t *optionalInstanceMethods; // @optional标记的方法
+    method_list_t *optionalClassMethods; // @optional标记的类方法
     property_list_t *instanceProperties;
     uint32_t size;   // sizeof(protocol_t)
     uint32_t flags;
@@ -648,10 +654,10 @@ struct protocol_t : objc_object {
         return demangledName();
     }
 
-    bool isFixedUp() const;
+    bool isFixedUp() const; // 是否已经固定了
     void setFixedUp();
 
-    bool isCanonical() const;
+    bool isCanonical() const; // 是否是规范的
     void clearIsCanonical();
 
 #   define HAS_FIELD(f) (size >= offsetof(protocol_t, f) + sizeof(f))
@@ -707,7 +713,15 @@ struct protocol_list_t {
     }
 };
 
+/**
+ 假如苹果在新版本的SDK中向NSObject类增加了一些内容，
+ NSObject占据的内存区域会扩大，开发者以前编译出二进制中的子类
+ 会与新的NSObject内存有重叠部分。于是在编译期会给instanceStart和instanceSize赋值，
+ 这样只需将子类与基类的这两个变量做对比即可知道子类是否与基类有重叠，如果有，也可知道子类
+ 需要挪多少偏移量
+ */
 struct class_ro_t {
+    // flags存储了很多在编译时期就确定的类的信息，也是ABI的一部分。详见RO_为前缀的宏定义，例如RO_META表示是否是元类
     uint32_t flags;
     uint32_t instanceStart;
     uint32_t instanceSize;
@@ -758,6 +772,7 @@ struct class_ro_t {
 /***********************************************************************
 * list_array_tt<Element, List>
 * Generic implementation for metadata that can be augmented by categories.
+* 可以按类别扩充的元数据的通用实现
 *
 * Element is the underlying metadata type (e.g. method_t)
 * List is the metadata's list type (e.g. method_list_t)
@@ -770,11 +785,12 @@ struct class_ro_t {
 * countLists/beginLists/endLists iterate the metadata lists
 * count/begin/end iterate the underlying metadata elements
 **********************************************************************/
+// 存储列表指针的数组结构
 template <typename Element, typename List>
 class list_array_tt {
     struct array_t {
         uint32_t count;
-        List* lists[0];
+        List* lists[0]; // 变长数组 https://gcc.gnu.org/onlinedocs/gcc/Zero-Length.html
 
         static size_t byteSize(uint32_t count) {
             return sizeof(array_t) + count*sizeof(lists[0]);
@@ -791,6 +807,7 @@ class list_array_tt {
         typename List::iterator m, mEnd;
 
      public:
+        // 迭代器一个接一个遍历List*
         iterator(List **begin, List **end) 
             : lists(begin), listsEnd(end)
         {
@@ -831,18 +848,21 @@ class list_array_tt {
 
  private:
     union {
-        List* list;
-        uintptr_t arrayAndFlag;
+        List* list; // method_list_t* list; NULL or A pointer to single list
+        uintptr_t arrayAndFlag; // an array of pointers to lists
     };
 
+    // 判断是否是存储List*的数组
     bool hasArray() const {
         return arrayAndFlag & 1;
     }
 
+    // 指向变长数组结构的指针
     array_t *array() {
         return (array_t *)(arrayAndFlag & ~1);
     }
 
+    // 设置数组数据
     void setArray(array_t *array) {
         arrayAndFlag = (uintptr_t)array | 1;
     }
@@ -898,6 +918,7 @@ class list_array_tt {
         }
     }
 
+    // 添加列表
     void attachLists(List* const * addedLists, uint32_t addedCount) {
         if (addedCount == 0) return;
 
@@ -1003,7 +1024,10 @@ class protocol_array_t :
     }
 };
 
-
+/**
+ class_rw_t提供了运行时对类拓展的能力
+ 运行时对类的扩展大都是存储在这里的
+ */
 struct class_rw_t {
     // Be warned that Symbolication knows the layout of this structure.
     uint32_t flags;
@@ -1019,6 +1043,7 @@ struct class_rw_t {
     Class firstSubclass;
     Class nextSiblingClass;
 
+    // demangledName是计算机语言用于解决实体名称唯一性的一种方法，做法是向名称中添加一些类型信息，用于从编译器中向链接器传递更多语义信息。
     char *demangledName;
 
 #if SUPPORT_INDEXED_ISA

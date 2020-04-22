@@ -2433,6 +2433,11 @@ static void reconcileInstanceVariables(Class cls, Class supercls, const class_ro
 * Returns the real class structure for the class. 
 * Locking: runtimeLock must be write-locked by the caller
 **********************************************************************/
+/**
+ 在某个类初始化之前，objc_class->data()返回的指针指向的其实是个 class_ro_t 结构体。
+ 等到 static Class realizeClassWithoutSwift(Class cls)静态方法在类第一次初始化时被调用，
+ 它会开辟 class_rw_t 的空间，并将 class_ro_t 指针赋值给 class_rw_t->ro。
+ */
 static Class realizeClassWithoutSwift(Class cls, Class previously)
 {
     runtimeLock.assertLocked();
