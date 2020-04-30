@@ -42,6 +42,7 @@ namespace objc {
 
 namespace detail {
 
+// DenseMap键值对
 // We extend a pair to allow users to override the bucket type with their own
 // implementation without requiring two members.
 template <typename KeyT, typename ValueT>
@@ -409,8 +410,11 @@ protected:
     // Ensure that "NumEntries * 4 < NumBuckets * 3"
     if (NumEntries == 0)
       return 0;
+    // 负载因子是0.75
+    // Buckets * 0.75 = NumEntries => Buckets = NumEntries * 4 / 3
     // +1 is required because of the strict equality.
     // For example if NumEntries is 48, we need to return 401.
+    // NextPowerOf2(n)表示找到最接近n的>=n的数(2的指数)
     return NextPowerOf2(NumEntries * 4 / 3 + 1);
   }
 
@@ -759,12 +763,29 @@ class DenseMap : public DenseMapBase<DenseMap<KeyT, ValueT, ValueInfoT, KeyInfoT
   // simplicity of referring to them.
   using BaseT = DenseMapBase<DenseMap, KeyT, ValueT, ValueInfoT, KeyInfoT, BucketT>;
 
-  BucketT *Buckets;
-  unsigned NumEntries;
-  unsigned NumTombstones;
-  unsigned NumBuckets;
+  BucketT *Buckets; // Hash桶的首地址，桶中存储的是std::pair<KeyT, ValueT>键值对
+  unsigned NumEntries; // 存储的数据数目
+  unsigned NumTombstones; // Tombstone个数，在解决Hash冲突时要用到该数据
+  unsigned NumBuckets; // Hash桶的数目
 
 public:
+  /**
+   explicit的作用是用来声明类构造函数是显示调用的，而非隐式调用，所以只用于修饰单参构造函数。因为无参构造函数和多参构造函数本身就是显示调用的。再加上explicit关键字也没有什么意义。
+    举例：
+   ```c++
+   class A {
+     private:
+      int val;
+     public:
+      explict A(int val) {
+        this->val = val;
+       }
+   }
+   
+        A a = 1; //隐式调用 不允许
+        A a(1); //显示调用 允许
+   ````
+   */
   /// Create a DenseMap wth an optional \p InitialReserve that guarantee that
   /// this number of elements can be inserted in the map without grow()
   explicit DenseMap(unsigned InitialReserve = 0) { init(InitialReserve); }
@@ -828,6 +849,7 @@ public:
   }
 
   void init(unsigned InitNumEntries) {
+    // 获取最小存储桶以保留条目
     auto InitBuckets = BaseT::getMinBucketToReserveForEntries(InitNumEntries);
     if (allocateBuckets(InitBuckets)) {
       this->BaseT::initEmpty();
@@ -896,13 +918,16 @@ private:
     return NumBuckets;
   }
 
+  /**
+   初始Bucket的个数分配内存空间
+   */
   bool allocateBuckets(unsigned Num) {
     NumBuckets = Num;
     if (NumBuckets == 0) {
       Buckets = nullptr;
       return false;
     }
-
+    // 使用operator new分配内存空间
     Buckets = static_cast<BucketT*>(operator new(sizeof(BucketT) * NumBuckets));
     return true;
   }
