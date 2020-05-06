@@ -58,6 +58,11 @@ struct test_ivar_t {
     }
 };
 
+__attribute__((constructor)) static void beforeFunction()
+{
+    printf("beforeFunction\n");
+}
+
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
@@ -81,6 +86,12 @@ int main(int argc, const char * argv[]) {
         object_setIvarWithStrongDefault(newObj, wx_var2, num2);
         
         NSLog(@"%@ %@", object_getIvar(newObj, wx_var1), object_getIvar(newObj, wx_var2));
+        
+        WXPerson *person = [WXPerson new];
+        
+//        [person performSelector:NSSelectorFromString(@"testForwardMethod")];
+        
+        NSLog(@"isKindOfClass: %@, isMemberOfClass: %@", @([person isKindOfClass:[WXPerson class]]), @([person isMemberOfClass:[WXPerson class]]));
         
 //        __autoreleasing WXPerson *person = [[WXPerson alloc] init];
 //        person.name = @"James";
