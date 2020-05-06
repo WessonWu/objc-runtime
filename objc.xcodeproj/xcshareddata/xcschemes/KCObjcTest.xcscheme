@@ -54,27 +54,12 @@
          <EnvironmentVariable
             key = "OBJC_PRINT_CUSTOM_AWZ"
             value = "YES"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "DYLD_PRINT_INITIALIZERS"
-            value = "1"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "DYLD_PRINT_SEGMENTS"
-            value = "1"
             isEnabled = "NO">
-         </EnvironmentVariable>
-         <EnvironmentVariable
-            key = "DYLD_PRINT_WEAK_BINDINGS"
-            value = "1"
-            isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "OBJC_PRINT_LOAD_METHODS"
             value = "YES"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "OBJC_PRINT_CLASS_SETUP"

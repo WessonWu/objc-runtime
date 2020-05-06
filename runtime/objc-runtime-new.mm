@@ -7116,12 +7116,14 @@ Class objc_allocateClassPair(Class superclass, const char *name,
     Class cls, meta;
 
     // Fail if the class name is in use.
+    // 查询name是否已经被占用了，如果被占用了就不能创建
     if (look_up_class(name, NO, NO)) return nil;
 
     mutex_locker_t lock(runtimeLock);
 
     // Fail if the class name is in use.
     // Fail if the superclass isn't kosher.
+    // 检查包括以swift风格命名的类是否已经占用了，以及检查superclass
     if (getClassExceptSomeSwift(name)  ||
         !verifySuperclass(superclass, true/*rootOK*/))
     {
@@ -7129,6 +7131,7 @@ Class objc_allocateClassPair(Class superclass, const char *name,
     }
 
     // Allocate new classes.
+    // 创建类对象&元类对象
     cls  = alloc_class_for_subclass(superclass, extraBytes);
     meta = alloc_class_for_subclass(superclass, extraBytes);
 
