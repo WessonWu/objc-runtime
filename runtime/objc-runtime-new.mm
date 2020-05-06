@@ -1091,7 +1091,7 @@ public:
     }
 };
 
-class UnattachedCategories : public ExplicitInitDenseMap<Class, category_list>
+class UnattachedCategories : public ExplicitInitDenseMap<Class, category_list> // ExplicitInit<DenseMap<Class, category_list>>
 {
 public:
     void addForClass(locstamped_category_t lc, Class cls)
@@ -1103,7 +1103,9 @@ public:
                          cls->isMetaClass() ? '+' : '-',
                          cls->nameForLogging(), lc.cat->name);
         }
-
+        // DenseMap<Class, category_list>
+        // std::pair<DenseMapIterator<Class, category_list, ValueInfoT, KeyInfoT, BucketT>, bool>
+        // BucketT: detail::DenseMapPair<Class, category_list>
         auto result = get().try_emplace(cls, lc);
         if (!result.second) {
             result.first->second.append(lc);
