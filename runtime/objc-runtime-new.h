@@ -921,13 +921,16 @@ class list_array_tt {
     // 添加列表
     void attachLists(List* const * addedLists, uint32_t addedCount) {
         if (addedCount == 0) return;
-
+        // 新加的addedLists都是插入到旧的列表前，也就是说后面声明的category的方法会覆盖之前的原先的方法，因为方法的查找是从前到后的
         if (hasArray()) {
             // many lists -> many lists
             uint32_t oldCount = array()->count;
             uint32_t newCount = oldCount + addedCount;
+            // 变长数组的大小=头部+总元素所占空间
+            // 重新分配空间 sizeof(array_t) + (oldCount + newCount) * sizeof(List *)
             setArray((array_t *)realloc(array(), array_t::byteSize(newCount)));
             array()->count = newCount;
+            // oldLists向后移addedCount个空间用来插入新加的addedLists
             memmove(array()->lists + addedCount, array()->lists, 
                     oldCount * sizeof(array()->lists[0]));
             memcpy(array()->lists, addedLists, 
