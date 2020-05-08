@@ -1107,7 +1107,10 @@ public:
         // std::pair<DenseMapIterator<Class, category_list, ValueInfoT, KeyInfoT, BucketT>, bool>
         // BucketT: detail::DenseMapPair<Class, category_list>
         auto result = get().try_emplace(cls, lc);
-        if (!result.second) {
+        if (!result.second) { // 如果已经存在了
+            // result.first: DenseMapIterator<Class, category_list, DenseMapValueInfo<category_list>, DenseMapInfo<Class>, detail::DenseMapPair<Class, category_list>>
+            // DenseMapIterator重载了->符号，
+            // 返回std::conditional<false, const detail::DenseMapPair<Class, category_list>>, detail::DenseMapPair<Class, category_list>>>::type * 即: detail::DenseMapPair<Class, category_list> *
             result.first->second.append(lc);
         }
     }
@@ -1265,7 +1268,7 @@ attachCategories(Class cls, const locstamped_category_t *cats_list, uint32_t cat
      * lists, so the final result is in the expected order.
      */
     constexpr uint32_t ATTACH_BUFSIZ = 64;
-    method_list_t   *mlists[ATTACH_BUFSIZ];
+    method_list_t   *mlists[ATTACH_BUFSIZ]; // 存储method_list_t*的缓存数组
     property_list_t *proplists[ATTACH_BUFSIZ];
     protocol_list_t *protolists[ATTACH_BUFSIZ];
 
@@ -1286,6 +1289,7 @@ attachCategories(Class cls, const locstamped_category_t *cats_list, uint32_t cat
                 rw->methods.attachLists(mlists, mcount);
                 mcount = 0;
             }
+            // 从后往前填充，相当于出栈操作 (cats_list中的category_t的存储是按category声明的顺序，当其attach到objc_class中的objc_rw_t的方法列表时，变成后声明的category在前，所有就有了前面声明的方法被后面声明的方法覆盖的问题)
             mlists[ATTACH_BUFSIZ - ++mcount] = mlist;
             fromBundle |= entry.hi->isBundle();
         }
@@ -3490,7 +3494,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     // Discover categories.
     for (EACH_HEADER) {
         bool hasClassProperties = hi->info()->hasCategoryClassProperties();
-
+        // catlist的每个元素都是category_t数组的首地址
         auto processCatlist = [&](category_t * const *catlist) {
             for (i = 0; i < count; i++) {
                 category_t *cat = catlist[i];

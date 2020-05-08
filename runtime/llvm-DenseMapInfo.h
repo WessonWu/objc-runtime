@@ -21,6 +21,9 @@
 
 namespace objc {
 
+// empty key、tombstone key以及哈希值的计算都是在DenseMapInfo<>模版类中实现的，
+// llvm提供了针对常见类型的DenseMapInfo<>的特化版本，例如指针类型、整型等
+// 对于empty key来说，基本上都是该类型所能表示的最大值，例如针对short而言，empty key为0xffff，tombstone key都是empty key - 1。
 template<typename T>
 struct DenseMapInfo {
   //static inline T getEmptyKey();
@@ -59,20 +62,20 @@ struct DenseMapInfo<DisguisedPtr<T>> {
       return ptr_hash((uintptr_t)PtrVal);
   }
   static bool isEqual(const DisguisedPtr<T> &LHS, const DisguisedPtr<T> &RHS) {
-      return LHS == RHS; 
+      return LHS == RHS;
   }
 };
 
 // Provide DenseMapInfo for cstrings.
 template<> struct DenseMapInfo<const char*> {
-  static inline const char* getEmptyKey() { 
-    return reinterpret_cast<const char *>((intptr_t)-1); 
+  static inline const char* getEmptyKey() {
+    return reinterpret_cast<const char *>((intptr_t)-1);
   }
-  static inline const char* getTombstoneKey() { 
-    return reinterpret_cast<const char *>((intptr_t)-2); 
+  static inline const char* getTombstoneKey() {
+    return reinterpret_cast<const char *>((intptr_t)-2);
   }
-  static unsigned getHashValue(const char* const &Val) { 
-    return _objc_strhash(Val); 
+  static unsigned getHashValue(const char* const &Val) {
+    return _objc_strhash(Val);
   }
   static bool isEqual(const char* const &LHS, const char* const &RHS) {
     if (LHS == RHS) {
@@ -206,6 +209,7 @@ struct DenseMapInfo<std::pair<T, U> > {
 
 template<typename T>
 struct DenseMapValueInfo {
+    // 是否可清除的
     static inline bool isPurgeable(const T &value) {
         return false;
     }

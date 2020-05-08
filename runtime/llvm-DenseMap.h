@@ -105,6 +105,7 @@ class DenseMapBase {
   using const_arg_type_t = typename const_pointer_or_const_ref<T>::type;
 
 public:
+  // 此处的using取代typedef
   using size_type = unsigned;
   using key_type = KeyT;
   using mapped_type = ValueT;
@@ -263,6 +264,10 @@ public:
   // Inserts key,value pair into the map if the key isn't already in the map.
   // The value is constructed in-place if the key is not in the map, otherwise
   // it is not moved.
+  // 插入
+  //DenseMap最终也会调用LookupBucketFor()来寻找插入位置，只是有可能插入的时候，桶数量不足，导致需要扩充新的桶以至于重新分配内存，插入的入口为insert()，具体的插入过程中由try_emplace()完成，是in-place式的插入。try_emplace()模拟了c++17中的std::map::try_emplace
+  
+  //DenseMap::try_emplace提供了左值和右值的两个版本，但是逻辑相同，首先使用Key查询map中是否已经存在了相同的键值，如果存在则返回<Iterator,false>，如果不存在则调用InsertIntoBucket()，该函数执行真正的插入操作，如果有需求的话则重新分配内存。
   template <typename... Ts>
   std::pair<iterator, bool> try_emplace(const KeyT &Key, Ts &&... Args) {
     BucketT *TheBucket;
@@ -751,6 +756,8 @@ bool operator!=(
   return !(LHS == RHS);
 }
 
+// DenseMap是在llvm中用的非常广泛的数据结构，它本身的实现是一个基于Quadratic probing（二次探查）的散列表，键值对本身是std::pair<KeyT, ValueT>
+// DenseMap<>继承自DenseMapBase<>，DenseMapBase是2012年Chandler Carruth添加的，为了实现SmallDenseMap<>，将DenseMap的哈希逻辑抽象到了DenseMapBase中，而内存管理的逻辑留在了DenseMap和SmallDenseMap实现。
 template <typename KeyT, typename ValueT,
           typename ValueInfoT = DenseMapValueInfo<ValueT>,
           typename KeyInfoT = DenseMapInfo<KeyT>,
@@ -765,7 +772,7 @@ class DenseMap : public DenseMapBase<DenseMap<KeyT, ValueT, ValueInfoT, KeyInfoT
 
   BucketT *Buckets; // Hash桶的首地址，桶中存储的是std::pair<KeyT, ValueT>键值对
   unsigned NumEntries; // 存储的数据数目
-  unsigned NumTombstones; // Tombstone个数，在解决Hash冲突时要用到该数据
+  unsigned NumTombstones; // Tombstone个数，在解决Hash冲突时要用到该数据(二次探查法删除数据时需要设置deleted标识)
   unsigned NumBuckets; // Hash桶的数目
 
 public:
@@ -1241,6 +1248,7 @@ private:
   }
 };
 
+// DenseMap的迭代器
 template <typename KeyT, typename ValueT, typename ValueInfoT,
           typename KeyInfoT, typename Bucket, bool IsConst>
 class DenseMapIterator {
