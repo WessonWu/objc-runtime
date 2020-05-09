@@ -2139,7 +2139,7 @@ static void addSubclass(Class supercls, Class subcls)
         ASSERT(subcls->isRealized());
 
         objc_debug_realized_class_generation_count++;
-        
+        // 父类有维护一个单向链表 （所有直属子类的链表），每次插入到链表头节点
         subcls->data()->nextSiblingClass = supercls->data()->firstSubclass;
         supercls->data()->firstSubclass = subcls;
 
@@ -2500,6 +2500,7 @@ static Class realizeClassWithoutSwift(Class cls, Class previously)
     //   or that Swift's initializers have already been called.
     //   fixme that assumption will be wrong if we add support
     //   for ObjC subclasses of Swift classes.
+    // 先realize&remap父类&元类
     supercls = realizeClassWithoutSwift(remapClass(cls->superclass), nil);
     metacls = realizeClassWithoutSwift(remapClass(cls->ISA()), nil);
 
@@ -2507,6 +2508,7 @@ static Class realizeClassWithoutSwift(Class cls, Class previously)
     if (isMeta) {
         // Metaclasses do not need any features from non pointer ISA
         // This allows for a faspath for classes in objc_retain/objc_release.
+        // 元类不需要一些nonpointer等表示对象属性的位段，其实就是不用再做&操作
         cls->setInstancesRequireRawIsa();
     } else {
         // Disable non-pointer isa for some classes and/or platforms.
@@ -2549,6 +2551,7 @@ static Class realizeClassWithoutSwift(Class cls, Class previously)
 
     // Reconcile instance variable offsets / layout.
     // This may reallocate class_ro_t, updating our ro variable.
+    // 如果是类对象，需要维护好实例变量的offset和实例对象的大小 (兼容OC基类&父类增减实例变量)
     if (supercls  &&  !isMeta) reconcileInstanceVariables(cls, supercls, ro);
 
     // Set fastInstanceSize if it wasn't set already.
@@ -2572,8 +2575,10 @@ static Class realizeClassWithoutSwift(Class cls, Class previously)
 
     // Connect this class to its superclass's subclass lists
     if (supercls) {
+        // 跟父类的子类链表建立连接
         addSubclass(supercls, cls);
     } else {
+        // 添加根类
         addRootClass(cls);
     }
 
@@ -3577,7 +3582,15 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     // Realize non-lazy classes (for +load methods and static instances)
     for (EACH_HEADER) {
-        // 读取__DATA,__objc_nlclslist，获取一开始就需要初始化的类对象（一般是实现了+load方法以及定义了静态实力变量）
+        /**
+         如果一个类实现了 +load 方法，那么它就是个 NonlazyClass
+         none-lazy class 是一个很特殊的区中取出来的 class 列表，
+         至于苹果为什么这么设计，估计就是为了提高效率：只有+load方法实现的类中才提前设置它的一些属性，
+         否则，只加载最基本的数据即可。
+         
+         苹果推荐使用+initialize方法，到要使用之前再进行realize
+         */
+        // 读取__DATA,__objc_nlclslist，获取一开始就需要初始化的类对象（一般是实现了+load方法）
         classref_t const *classlist = 
             _getObjc2NonlazyClassList(hi, &count);
         for (i = 0; i < count; i++) {
