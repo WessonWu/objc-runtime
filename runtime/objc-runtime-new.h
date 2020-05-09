@@ -1039,6 +1039,14 @@ struct class_rw_t {
 
     const class_ro_t *ro;
 
+    // 方法列表数组 (查看_read_images & realizeClassWithoutSwift & methodizeClass)
+    /**
+     假如我定义了类A，然后又定义了分类A1(先)和 分类A2(后)
+     则method_array_t数组存储结构如下:
+     [分类A2的method_list_t, 分类A1的method_list_t, 类A的method_list_t]
+     
+     然后查找方法的时候是按照分类A2方法列表->分类A1列表->类A列表，所有有了方法覆盖的原因
+     */
     method_array_t methods;
     property_array_t properties;
     protocol_array_t protocols;
@@ -1186,11 +1194,15 @@ public:
     }
 };
 
-
+// 类的结构，存储在__DATA,__objc_data中(按照元类1,类1，元类2，类2 ...方式存储)
+// 可以通过__DATA,__objc_classlist/__DATA,__objc_nlclslist来获取类的引用
 struct objc_class : objc_object {
     // Class ISA;
     Class superclass;
     cache_t cache;             // formerly cache pointer and vtable
+    
+    // 该字段在mach-o文件中初始值是class_ro_t引用，在类被初始化的时候(realizeClassWithoutSwift方法)
+    // 重新分配一个class_rw_t的空间用来支持动态添加方法或属性的能力
     class_data_bits_t bits;    // class_rw_t * plus custom rr/alloc flags
 
     class_rw_t *data() const {
@@ -1239,10 +1251,12 @@ struct objc_class : objc_object {
     }
 #endif
 
+    // AWZ是allocWithZone的缩写
 #if FAST_CACHE_HAS_DEFAULT_AWZ
     bool hasCustomAWZ() const {
         return !cache.getBit(FAST_CACHE_HAS_DEFAULT_AWZ);
     }
+    // 表示类或父类中是否有alloc/allocWithZone:默认实现 (该标识只存在于元类中)
     void setHasDefaultAWZ() {
         cache.setBit(FAST_CACHE_HAS_DEFAULT_AWZ);
     }
@@ -1265,6 +1279,7 @@ struct objc_class : objc_object {
     bool hasCustomCore() const {
         return !cache.getBit(FAST_CACHE_HAS_DEFAULT_CORE);
     }
+    // 类或父类有默认的 new/self/class/respondsToSelector/isKindOfClass
     void setHasDefaultCore() {
         return cache.setBit(FAST_CACHE_HAS_DEFAULT_CORE);
     }
@@ -1284,6 +1299,7 @@ struct objc_class : objc_object {
 #endif
 
 #if FAST_CACHE_HAS_CXX_CTOR
+    // 类或父类有.cxx_construct实现(C++构造方法)
     bool hasCxxCtor() {
         ASSERT(isRealized());
         return cache.getBit(FAST_CACHE_HAS_CXX_CTOR);
@@ -1302,6 +1318,7 @@ struct objc_class : objc_object {
 #endif
 
 #if FAST_CACHE_HAS_CXX_DTOR
+    // 类或父类有.cxx_destruct实现(C++析构方法)
     bool hasCxxDtor() {
         ASSERT(isRealized());
         return cache.getBit(FAST_CACHE_HAS_CXX_DTOR);
@@ -1319,6 +1336,7 @@ struct objc_class : objc_object {
     }
 #endif
 
+    // 类的实例需要原始isa
 #if FAST_CACHE_REQUIRES_RAW_ISA
     bool instancesRequireRawIsa() {
         return cache.getBit(FAST_CACHE_REQUIRES_RAW_ISA);
@@ -1571,7 +1589,7 @@ struct objc_class : objc_object {
     }
 };
 
-
+// 继承自NSObject的swift类结构
 struct swift_class_t : objc_class {
     uint32_t flags;
     uint32_t instanceAddressOffset;
@@ -1589,7 +1607,8 @@ struct swift_class_t : objc_class {
     }
 };
 
-
+// 分类 结构存储在__DATA,__objc_const中
+// 可以通过__DATA,__objc_catlist/__DATA,__objc_catlist2/__DATA,__objc_nlcatlist获取category_t的地址
 struct category_t {
     const char *name;
     classref_t cls;

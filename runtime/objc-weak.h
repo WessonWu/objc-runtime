@@ -89,6 +89,7 @@ struct weak_entry_t {
             uintptr_t        max_hash_displacement; // 最大哈希偏移值
         };
         struct {
+            // 默认4个插槽，当对象的弱引用指针超过四个时采用上述hash数组的方式
             // out_of_line_ness field is low bits of inline_referrers[1]
             weak_referrer_t  inline_referrers[WEAK_INLINE_COUNT];
         };

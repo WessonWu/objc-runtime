@@ -102,9 +102,9 @@ enum HaveOld { DontHaveOld = false, DoHaveOld = true };
 enum HaveNew { DontHaveNew = false, DoHaveNew = true };
 
 struct SideTable {
-    spinlock_t slock;
-    RefcountMap refcnts;
-    weak_table_t weak_table;
+    spinlock_t slock; // 自旋锁 已经都改成互斥量了（系统原先的自旋锁有问题）
+    RefcountMap refcnts; // 对象引用计数相关map (64位的地址值实际用于寻址的有效位只有33位(ARM64)，另外有19位的extra_rc用于存储引用计数，当引用计数的值超过19位所能表述的值之后，就需要使用SideTable来存储溢出的引用计数，由has_sidetable_rc来指示是否有存储在SideTable中的引用计数)，数据结构：哈希数组
+    weak_table_t weak_table; // 存储对象弱引用的table，数据结构：哈希数组
 
     SideTable() {
         memset(&weak_table, 0, sizeof(weak_table));
@@ -169,6 +169,8 @@ void SideTable::unlockTwo<DontHaveOld, DoHaveNew>
     lock2->unlock();
 }
 
+// SideTable哈希数组
+// iPhone上共有8个SideTable Mac上或模拟器上有64个SideTable，所有很多对象共用一个SideTable
 static objc::ExplicitInit<StripedMap<SideTable>> SideTablesMap;
 
 static StripedMap<SideTable>& SideTables() {

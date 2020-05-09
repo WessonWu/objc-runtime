@@ -3074,6 +3074,7 @@ Class readClass(Class cls, bool headerIsBundle, bool headerIsPreoptimized)
 {
     const char *mangledName = cls->mangledName();
     
+    // 检查父类是否是弱链接类型且不存在
     if (missingWeakSuperclass(cls)) {
         // No superclass (probably weak-linked). 
         // Disavow any knowledge of this subclass.
@@ -3121,7 +3122,9 @@ Class readClass(Class cls, bool headerIsBundle, bool headerIsPreoptimized)
         // ASSERT(cls == getClass(name));
         ASSERT(getClassExceptSomeSwift(mangledName));
     } else {
+        // 将类注册到全局Hash表中，Key为类的名称，Value为类对象(不能包含元类)，用于objc_lookUpClass/NSClassFromString
         addNamedClass(cls, mangledName, replacing);
+        // 将类&元类对象添加到全局的表格中
         addClassTableEntry(cls);
     }
 
@@ -3376,7 +3379,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             // Image is sufficiently optimized that we need not call readClass()
             continue;
         }
-
+        // 读取__DATA,__objc_classlist，获得Objc类引用数组
         classref_t const *classlist = _getObjc2ClassList(hi, &count);
 
         bool headerIsBundle = hi->isBundle();
@@ -3406,6 +3409,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     
     if (!noClassesRemapped()) {
         for (EACH_HEADER) {
+            // 读取__DATA,__objc_classrefs，获取Objc类的引用，包括其他动态库上的类 (表示使用到，可根据此进行应用瘦身，剔除无用的类数据)
             Class *classrefs = _getObjc2ClassRefs(hi, &count);
             for (i = 0; i < count; i++) {
                 remapClassRef(&classrefs[i]);
@@ -3463,7 +3467,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         }
 
         bool isBundle = hi->isBundle();
-
+        // 读取__DATA,__objc_protolist，获取自定义的protocol的引用数组
         protocol_t * const *protolist = _getObjc2ProtocolList(hi, &count);
         for (i = 0; i < count; i++) {
             readProtocol(protolist[i], cls, protocol_map, 
@@ -3483,6 +3487,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         // loaded later.
         if (launchTime && cacheSupportsProtocolRoots && hi->isPreoptimized())
             continue;
+        // 读取__DATA,__objc_protorefs，获取协议引用
         protocol_t **protolist = _getObjc2ProtocolRefs(hi, &count);
         for (i = 0; i < count; i++) {
             remapProtocolRef(&protolist[i]);
@@ -3555,7 +3560,10 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
                 }
             }
         };
+        // 读取__DATA,__objc_catlist，获取所定义的分类结构, 数据一般存放在__DATA,__objc_const中
+        // 获取的分类列表登记在unattachedCategories哈希Map中，用于后续将分类中方法/属性等添加到对应的类的class_rw_t中
         processCatlist(_getObjc2CategoryList(hi, &count));
+        // 读取__DATA,__objc_catlist2，获取所定义的分类结构
         processCatlist(_getObjc2CategoryList2(hi, &count));
     }
 
@@ -3569,6 +3577,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     // Realize non-lazy classes (for +load methods and static instances)
     for (EACH_HEADER) {
+        // 读取__DATA,__objc_nlclslist，获取一开始就需要初始化的类对象（一般是实现了+load方法以及定义了静态实力变量）
         classref_t const *classlist = 
             _getObjc2NonlazyClassList(hi, &count);
         for (i = 0; i < count; i++) {
