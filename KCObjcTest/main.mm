@@ -17,6 +17,12 @@
 
 @implementation WXPerson
 
+// 当我们实现load方式时，该class的引用就会被存放在__objc_nlclslist区中，在map_image(_read_images)阶段时该类&元类对象就会被初始化
+// 所以更加推荐使用initialize方法进行惰性初始化
++ (void)load {
+    NSLog(@"%@: %@", NSStringFromClass(self), NSStringFromSelector(_cmd));
+}
+
 @end
 
 
