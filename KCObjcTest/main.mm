@@ -32,8 +32,10 @@
 
 @end
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored"-Weverything"
 @implementation NSObject (Foo)
-
+#pragma clang diagnostic pop
 - (void)foo {
     NSLog(@"foo");
 }
@@ -85,14 +87,27 @@ int main(int argc, const char * argv[]) {
         
         test_ivar_t *test_wx_var1 = (test_ivar_t *)wx_var1;
         test_ivar_t *test_wx_var2 = (test_ivar_t *)wx_var2;
-        NSLog(@"%d %d %zu", *test_wx_var1->offset, *test_wx_var2->offset, class_getInstanceSize(newClass));
+        NSLog(@"ivar1 offset: %d, ivar2 offset: %d, instanceSize: %zu", *test_wx_var1->offset, *test_wx_var2->offset, class_getInstanceSize(newClass));
         NSNumber *num1 = [NSNumber numberWithInt:1];
         NSNumber *num2 = [NSNumber numberWithLong:2];
         object_setIvarWithStrongDefault(newObj, wx_var1, num1);
         object_setIvarWithStrongDefault(newObj, wx_var2, num2);
         
-        NSLog(@"%@ %@", object_getIvar(newObj, wx_var1), object_getIvar(newObj, wx_var2));
+        NSLog(@"通过object_set/getIvar: %@ %@", object_getIvar(newObj, wx_var1), object_getIvar(newObj, wx_var2));
         
+        // 通过直接rw内存地址
+        int32_t ivar1_offset = *test_wx_var1->offset;
+        int32_t ivar2_offset = *test_wx_var2->offset;
+        uint64_t newObj_ref = (uint64_t) newObj;
+        uint64_t *newObj_ivar1_ref = (uint64_t *)(newObj_ref + ivar1_offset);
+        // 写的时候要转成oc对象
+        *newObj_ivar1_ref = (uint64_t)[NSNumber numberWithInt:3];
+        uint64_t *newObj_ivar2_ref = (uint64_t *)(newObj_ref + ivar2_offset);
+        *newObj_ivar2_ref = (uint64_t)[NSNumber numberWithInt:4];
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored"-Weverything"
+        NSLog(@"直接读写内存: %@ %@", *newObj_ivar1_ref, *newObj_ivar2_ref);
+        #pragma clang diagnostic pop
         WXPerson *person = [WXPerson new];
         
 //        [person performSelector:NSSelectorFromString(@"testForwardMethod")];
