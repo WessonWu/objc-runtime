@@ -719,25 +719,45 @@ struct protocol_list_t {
  会与新的NSObject内存有重叠部分。于是在编译期会给instanceStart和instanceSize赋值，
  这样只需将子类与基类的这两个变量做对比即可知道子类是否与基类有重叠，如果有，也可知道子类
  需要挪多少偏移量
+ 
+ 该结构存储于__DATA,__objc_const区中
  */
 struct class_ro_t {
     // flags存储了很多在编译时期就确定的类的信息，也是ABI的一部分。详见RO_为前缀的宏定义，例如RO_META表示是否是元类
     uint32_t flags;
+    // 类对象第一个实例变量的偏移值 一般是父类的instanceSize
+    // 如果子类instanceStart<父类的instanceSize，则说明发生了重叠部分，需要对ivars的偏移值进行调整
     uint32_t instanceStart;
-    uint32_t instanceSize;
+    uint32_t instanceSize; // 实例对象的大小
 #ifdef __LP64__
     uint32_t reserved;
 #endif
-
-    const uint8_t * ivarLayout;
+    /// ivarLayout主要用于memcpy内存复制的时候维护原对象实例变量的内存管理
+    /**
+     uint8_t 高四位记录几个不是strong类型，低四位记录几个是stong类型
+     比如
+     0x01 表示0个非strong类型和1个strong类型
+     0x21 表示2个非strong类型和1个storng类型
+     0x00 表示结束 类似字符串结束符'\0'
+     可以查看fixupCopiedIvars方法对ivar处理内存管理
+     */
+    const uint8_t * ivarLayout; // 记录了哪些是 strong 的 ivar
     
-    const char * name;
-    method_list_t * baseMethodList;
-    protocol_list_t * baseProtocols;
-    const ivar_list_t * ivars;
+    const char * name; // 类的名称，实际存放于__TEXT,__objc_classname中
+    method_list_t * baseMethodList; // 如果是类对象则存放的是实例方法数组引用，如果是元类对象则存放的是类方法数组引用
+    protocol_list_t * baseProtocols; // 类实现的所有protocol数组引用
+    const ivar_list_t * ivars; // 该类所定义的所有实例变量的数组引用
 
-    const uint8_t * weakIvarLayout;
-    property_list_t *baseProperties;
+    /**
+     uint8_t 高四位记录几个不是weak类型，低四位记录几个是weak类型
+     比如
+     0x01 表示0个非weak类型和1个weak类型
+     0x21 表示2个非weak类型和1个weak类型
+     0x00 表示结束 类似字符串结束符'\0'
+     可以查看fixupCopiedIvars方法对ivar处理内存管理
+     */
+    const uint8_t * weakIvarLayout; // 记录了哪些是 weak 的 ivar
+    property_list_t *baseProperties; // 该类所定义的所有属性数组引用
 
     // This field exists only when RO_HAS_SWIFT_INITIALIZER is set.
     _objc_swiftMetadataInitializer __ptrauth_objc_method_list_imp _swiftMetadataInitializer_NEVER_USE[0];
@@ -1612,9 +1632,10 @@ struct swift_class_t : objc_class {
 struct category_t {
     const char *name;
     classref_t cls;
-    struct method_list_t *instanceMethods;
-    struct method_list_t *classMethods;
-    struct protocol_list_t *protocols;
+    // 以下的指针指向的数组实际都存放于__DATA,__objc_const区中
+    struct method_list_t *instanceMethods; // 分类的实例方法(method_t)的数组地址
+    struct method_list_t *classMethods; // 分类的类方法数组地址
+    struct protocol_list_t *protocols; // 分类实现的prototol数组
     struct property_list_t *instanceProperties;
     // Fields below this point are not always present on disk.
     struct property_list_t *_classProperties;

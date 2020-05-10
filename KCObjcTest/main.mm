@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "Sark.h"
 #import <objc/message.h>
 #import <objc/runtime.h>
 
@@ -72,10 +73,35 @@ __attribute__((constructor)) static void beforeFunction()
 }
 
 
+void deepinIvarLayout() {
+    // 探索IvarLayout
+    Class cls = [Sark class];
+    const uint8_t *strongLayout = class_getIvarLayout(cls);
+    const uint8_t *weakLayout = class_getWeakIvarLayout(cls);
+    
+    NSLog(@"=========Deep in Ivar Layout Begin ==========");
+    printf("Sark stong ivar layout: ");
+    unsigned char byte;
+    while ((byte = *strongLayout++)) {
+        printf("%02x ", byte);
+    }
+    printf("\n");
+    
+    printf("Sark weak ivar layout: ");
+    while ((byte = *weakLayout++)) {
+        printf("%02x ", byte);
+    }
+    printf("\n");
+    NSLog(@"=========Deep in Ivar Layout End  ==========");
+}
+
+
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         Class nsobjectClass = [NSObject class];
         ((void(*)(id, SEL))objc_msgSend)(nsobjectClass, @selector(foo));
+        deepinIvarLayout();
+        
         Class newClass = objc_allocateClassPair(nsobjectClass, "WXObject", 0);
         // alignment 为2^alignment 即alignment=2则按4字节对齐,alignment=3则按8字节对齐，会影响到实例对象的大小
         class_addIvar(newClass, "wx_var2", sizeof(long), 3, @encode(long));

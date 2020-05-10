@@ -33,6 +33,8 @@
 
 /* Begin PBXBuildFile section */
 		0ADE20DD246704D4009EC375 /* WXPerson1.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ADE20DC246704D4009EC375 /* WXPerson1.m */; };
+		0ADE20E0246793DA009EC375 /* Sark.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ADE20DF246793DA009EC375 /* Sark.m */; };
+		0ADE20E3246793E6009EC375 /* Foo.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ADE20E2246793E6009EC375 /* Foo.m */; };
 		393CEAC00DC69E3E000B69DE /* objc-references.mm in Sources */ = {isa = PBXBuildFile; fileRef = 393CEABF0DC69E3E000B69DE /* objc-references.mm */; };
 		393CEAC60DC69E67000B69DE /* objc-references.h in Headers */ = {isa = PBXBuildFile; fileRef = 393CEAC50DC69E67000B69DE /* objc-references.h */; };
 		39ABD72312F0B61800D1054C /* objc-weak.h in Headers */ = {isa = PBXBuildFile; fileRef = 39ABD71F12F0B61800D1054C /* objc-weak.h */; };
@@ -185,6 +187,10 @@
 /* Begin PBXFileReference section */
 		0ADE20DB246704D3009EC375 /* WXPerson1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WXPerson1.h; sourceTree = "<group>"; };
 		0ADE20DC246704D4009EC375 /* WXPerson1.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WXPerson1.m; sourceTree = "<group>"; };
+		0ADE20DE246793DA009EC375 /* Sark.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Sark.h; sourceTree = "<group>"; };
+		0ADE20DF246793DA009EC375 /* Sark.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Sark.m; sourceTree = "<group>"; };
+		0ADE20E1246793E6009EC375 /* Foo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Foo.h; sourceTree = "<group>"; };
+		0ADE20E2246793E6009EC375 /* Foo.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Foo.m; sourceTree = "<group>"; };
 		393CEABF0DC69E3E000B69DE /* objc-references.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = "objc-references.mm"; path = "runtime/objc-references.mm"; sourceTree = "<group>"; };
 		393CEAC50DC69E67000B69DE /* objc-references.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "objc-references.h"; path = "runtime/objc-references.h"; sourceTree = "<group>"; };
 		39ABD71F12F0B61800D1054C /* objc-weak.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "objc-weak.h"; path = "runtime/objc-weak.h"; sourceTree = "<group>"; };
@@ -495,6 +501,10 @@
 				7A2E8B0C2410F196000F6584 /* main.mm */,
 				0ADE20DB246704D3009EC375 /* WXPerson1.h */,
 				0ADE20DC246704D4009EC375 /* WXPerson1.m */,
+				0ADE20DE246793DA009EC375 /* Sark.h */,
+				0ADE20DF246793DA009EC375 /* Sark.m */,
+				0ADE20E1246793E6009EC375 /* Foo.h */,
+				0ADE20E2246793E6009EC375 /* Foo.m */,
 			);
 			path = KCObjcTest;
 			sourceTree = "<group>";
@@ -846,7 +856,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				7A2E8B0D2410F196000F6584 /* main.mm in Sources */,
+				0ADE20E3246793E6009EC375 /* Foo.m in Sources */,
 				0ADE20DD246704D4009EC375 /* WXPerson1.m in Sources */,
+				0ADE20E0246793DA009EC375 /* Sark.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
