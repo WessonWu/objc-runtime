@@ -566,7 +566,7 @@ struct method_t {
     };
 };
 
-// 实例变量
+// 实例变量，正常编译的实际位于__DATA,__objc_const中，通常是跟ivar_list_t一起出现
 struct ivar_t {
 #if __x86_64__
     // *offset was originally 64-bit on some x86_64 platforms.
@@ -576,12 +576,12 @@ struct ivar_t {
     // Some code uses all 64 bits. class_addIvar() over-allocates the 
     // offset for their benefit.
 #endif
-    int32_t *offset; // 偏移量
-    const char *name; // 变量名称
-    const char *type; //变量类型
+    int32_t *offset; // 偏移量引用 正常编译的一般实际存放在__DATA,__objc_ivar
+    const char *name; // 变量名称 正常编译的一般实际引用了__TEXT,__methname
+    const char *type; //变量类型 正常编译的一般实际应用了__TEXT,__methtype
     // alignment is sometimes -1; use alignment() instead
-    uint32_t alignment_raw;
-    uint32_t size;
+    uint32_t alignment_raw; // 对齐子节数2^alignment_raw，一般是3，即8子节对齐
+    uint32_t size; // 实例变量的大小，一般是8，即存储对象地址，即id类型
 
     uint32_t alignment() const {
         if (alignment_raw == ~(uint32_t)0) return 1U << WORD_SHIFT;
@@ -589,15 +589,15 @@ struct ivar_t {
     }
 };
 
-// 属性
+// 属性，正常编译的一般存放在__DATA,__objc_const，通常是跟随property_list_t出现的，也就是被包裹在数组里
 struct property_t {
-    const char *name; // 属性名称
-    const char *attributes; // 属性Attributes(strong, copy, weak, assign ...)
+    const char *name; // 属性名称，正常编译的一般引用自__TEXT,__cstring里的
+    const char *attributes; // 属性Attributes(strong, copy, weak, assign ...)，正常编译的一般引用自__TEXT,__cstring
 };
 
 // Two bits of entsize are used for fixup markers.
 // entsize的两位用于固定标记。 0b11
-// 方法列表
+// 方法列表，数据存放于__DATA,__objc_const中
 struct method_list_t : entsize_list_tt<method_t, method_list_t, 0x3> {
     bool isUniqued() const;
     bool isFixedUp() const;
@@ -611,14 +611,14 @@ struct method_list_t : entsize_list_tt<method_t, method_list_t, 0x3> {
     }
 };
 
-// 实例变量列表
+// 实例变量列表，存放于__DATA,__objc_const中
 struct ivar_list_t : entsize_list_tt<ivar_t, ivar_list_t, 0> {
     bool containsIvar(Ivar ivar) const {
         return (ivar >= (Ivar)&*begin()  &&  ivar < (Ivar)&*end());
     }
 };
 
-// 属性列表
+// 属性列表, 存放于__DATA,__objc_const中
 struct property_list_t : entsize_list_tt<property_t, property_list_t, 0> {
 };
 
@@ -632,10 +632,11 @@ typedef uintptr_t protocol_ref_t;  // protocol_t *, but unremapped
 // Bits 0..15 are reserved for Swift's use.
 
 #define PROTOCOL_FIXED_UP_MASK (PROTOCOL_FIXED_UP_1 | PROTOCOL_FIXED_UP_2)
-
+// 一般存放于__DATA,__data中
 struct protocol_t : objc_object {
+    // ISA
     const char *mangledName;
-    struct protocol_list_t *protocols;
+    struct protocol_list_t *protocols; // 继承自哪些protocols
     method_list_t *instanceMethods; // @requried 实例方法列表
     method_list_t *classMethods; // @required 类方法列表
     method_list_t *optionalInstanceMethods; // @optional标记的方法
@@ -1050,6 +1051,7 @@ class protocol_array_t :
 /**
  class_rw_t提供了运行时对类拓展的能力
  运行时对类的扩展大都是存储在这里的
+ class realize的时候创建的存放在堆区中
  */
 struct class_rw_t {
     // Be warned that Symbolication knows the layout of this structure.
@@ -1104,7 +1106,7 @@ struct class_rw_t {
     }
 };
 
-
+// bits & FAST_DATA_MASK 等于 class_ro_t * (未Realized的时候) 或 class_rw_t * (Realized之后)
 struct class_data_bits_t {
     friend objc_class;
 
@@ -1221,8 +1223,12 @@ struct objc_class : objc_object {
     Class superclass;
     cache_t cache;             // formerly cache pointer and vtable
     
-    // 该字段在mach-o文件中初始值是class_ro_t引用，在类被初始化的时候(realizeClassWithoutSwift方法)
-    // 重新分配一个class_rw_t的空间用来支持动态添加方法或属性的能力
+    /**
+     该字段在mach-o文件中初始值是指向class_ro_t引用，在类被初始化的时候(realizeClassWithoutSwift方法)
+    重新分配一个class_rw_t的空间用来支持动态添加方法或属性的能力
+     另外，类的结构是8字节对齐的，也就说指向类的地址的后三位永远是000，
+     所以一般把这三位用来存储其它额外的信息，例如FAST_HAS_DEFAULT_RR/FAST_CACHE_HAS_DEFAULT_AWZ/FAST_CACHE_HAS_DEFAULT_CORE
+     */
     class_data_bits_t bits;    // class_rw_t * plus custom rr/alloc flags
 
     class_rw_t *data() const {
@@ -1249,6 +1255,8 @@ struct objc_class : objc_object {
         data()->changeFlags(set, clear);
     }
 
+    // class或superclass是否有默认的retain/release/autorelease/retainCount/
+    //   _tryRetain/_isDeallocating/retainWeakReference/allowsWeakReference
 #if FAST_HAS_DEFAULT_RR
     bool hasCustomRR() const {
         return !bits.getBit(FAST_HAS_DEFAULT_RR);
@@ -1653,11 +1661,13 @@ struct category_t {
     }
 };
 
+// [super viewDidLoad] => objc_msgSendSuper(objc_super2 { self, superclass }, _cmd, ...)
 struct objc_super2 {
     id receiver;
     Class current_class;
 };
 
+// 旧的ObjC消息 (历史遗留)
 struct message_ref_t {
     IMP imp;
     SEL sel;

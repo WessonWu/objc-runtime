@@ -2,7 +2,7 @@
 //  main.m
 //  KCObjcTest
 //
-//  Created by Cooci on 2020/3/5.
+//  Created by wuweixin on 2020/3/5.
 //
 
 #import <Foundation/Foundation.h>
@@ -10,7 +10,7 @@
 #import <objc/message.h>
 #import <objc/runtime.h>
 
-@interface WXPerson : NSObject
+@interface WXPerson : NSObject<SarkDelegate>
 
 @property(nonatomic, copy) NSString * name;
 
@@ -22,6 +22,18 @@
 // 所以更加推荐使用initialize方法进行惰性初始化
 + (void)load {
     NSLog(@"%@: %@", NSStringFromClass(self), NSStringFromSelector(_cmd));
+}
+
++ (void)sark0 {
+    NSLog(@"method: %@", NSStringFromSelector(_cmd));
+}
+
+- (void)sark1 {
+    NSLog(@"method: %@", NSStringFromSelector(_cmd));
+}
+
+- (void)sark2 {
+    NSLog(@"method: %@", NSStringFromSelector(_cmd));
 }
 
 @end
