@@ -95,6 +95,38 @@ void deepinIvarLayout() {
     NSLog(@"=========Deep in Ivar Layout End  ==========");
 }
 
+static void fixup_class_arc(Class cls) {
+    struct {
+        Class isa;
+        Class superclass;
+        struct {
+            void *_buckets;
+#if __LP64__
+            uint32_t _mask;
+            uint32_t _occupied;
+#else
+            uint16_t _mask;
+            uint16_t _occupied;
+#endif
+        } cache;
+        uintptr_t bits;
+    } *objcClass = (__bridge typeof(objcClass))cls;
+#if !__LP64__
+#define FAST_DATA_MASK 0xfffffffcUL
+#else
+#define FAST_DATA_MASK 0x00007ffffffffff8UL
+#endif
+    struct {
+        uint32_t flags;
+        uint32_t version;
+        struct {
+            uint32_t flags;
+        } *ro;
+    } *objcRWClass = (typeof(objcRWClass))(objcClass->bits & FAST_DATA_MASK);
+#define RO_IS_ARR 1<<7
+    objcRWClass->ro->flags |= RO_IS_ARR;
+}
+
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
@@ -104,9 +136,21 @@ int main(int argc, const char * argv[]) {
         
         Class newClass = objc_allocateClassPair(nsobjectClass, "WXObject", 0);
         // alignment 为2^alignment 即alignment=2则按4字节对齐,alignment=3则按8字节对齐，会影响到实例对象的大小
-        class_addIvar(newClass, "wx_var2", sizeof(long), 3, @encode(long));
-        class_addIvar(newClass, "wx_var1", sizeof(int), 2, @encode(int));
+        class_addIvar(newClass, "_gayFriend", sizeof(id), log2(sizeof(id)), @encode(id)); // weak
+        class_addIvar(newClass, "wx_var2", sizeof(long), log2(sizeof(long)), @encode(long)); // strong
+        class_addIvar(newClass, "wx_var1", sizeof(int), log2(sizeof(int)), @encode(int)); // strong
+        class_addIvar(newClass, "_girlFriend", sizeof(id), log2(sizeof(id)), @encode(id)); // __unsafe_unretained
+        class_addIvar(newClass, "_company", sizeof(id), log2(sizeof(id)), @encode(id)); // strong
+        class_addIvar(newClass, "_company2", sizeof(id), log2(sizeof(id)), @encode(id)); // weak
+        /**
+         strong 和 weak 的内存管理并没有生效， class 的 flags 中有一个标记位记录这个类是否 ARC，
+         正常编译的类，且标识了 -fobjc-arc flag 时，这个标记位为1，而动态创建的类并没有设置它。
+         */
+        class_setIvarLayout(newClass, (const uint8_t *)"\x12\x11");
+        class_setWeakIvarLayout(newClass, (const uint8_t *)"\x01\x41");
         objc_registerClassPair(newClass);
+        fixup_class_arc(newClass); // 动态添加的类默认不是ARC的所以我们必须修正它
+        
         id newObj = ((id(*)(id, SEL))objc_msgSend)(newClass, @selector(new));
         Ivar wx_var1 = class_getInstanceVariable(newClass, "wx_var1");
         Ivar wx_var2 = class_getInstanceVariable(newClass, "wx_var2");
