@@ -32,6 +32,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		0ABE314E2468FF70000ADD14 /* WXPerson.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ABE314D2468FF70000ADD14 /* WXPerson.m */; };
+		0ABE31512468FFF5000ADD14 /* NSObject+Foo.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ABE31502468FFF5000ADD14 /* NSObject+Foo.m */; };
 		0ADE20DD246704D4009EC375 /* WXPerson1.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ADE20DC246704D4009EC375 /* WXPerson1.m */; };
 		0ADE20E0246793DA009EC375 /* Sark.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ADE20DF246793DA009EC375 /* Sark.m */; };
 		0ADE20E3246793E6009EC375 /* Foo.m in Sources */ = {isa = PBXBuildFile; fileRef = 0ADE20E2246793E6009EC375 /* Foo.m */; };
@@ -185,6 +187,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0ABE314C2468FF70000ADD14 /* WXPerson.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WXPerson.h; sourceTree = "<group>"; };
+		0ABE314D2468FF70000ADD14 /* WXPerson.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WXPerson.m; sourceTree = "<group>"; };
+		0ABE314F2468FFF5000ADD14 /* NSObject+Foo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSObject+Foo.h"; sourceTree = "<group>"; };
+		0ABE31502468FFF5000ADD14 /* NSObject+Foo.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSObject+Foo.m"; sourceTree = "<group>"; };
 		0ADE20DB246704D3009EC375 /* WXPerson1.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WXPerson1.h; sourceTree = "<group>"; };
 		0ADE20DC246704D4009EC375 /* WXPerson1.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = WXPerson1.m; sourceTree = "<group>"; };
 		0ADE20DE246793DA009EC375 /* Sark.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Sark.h; sourceTree = "<group>"; };
@@ -499,6 +505,10 @@
 			isa = PBXGroup;
 			children = (
 				7A2E8B0C2410F196000F6584 /* main.mm */,
+				0ABE314C2468FF70000ADD14 /* WXPerson.h */,
+				0ABE314D2468FF70000ADD14 /* WXPerson.m */,
+				0ABE314F2468FFF5000ADD14 /* NSObject+Foo.h */,
+				0ABE31502468FFF5000ADD14 /* NSObject+Foo.m */,
 				0ADE20DB246704D3009EC375 /* WXPerson1.h */,
 				0ADE20DC246704D4009EC375 /* WXPerson1.m */,
 				0ADE20DE246793DA009EC375 /* Sark.h */,
@@ -856,6 +866,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				7A2E8B0D2410F196000F6584 /* main.mm in Sources */,
+				0ABE314E2468FF70000ADD14 /* WXPerson.m in Sources */,
+				0ABE31512468FFF5000ADD14 /* NSObject+Foo.m in Sources */,
 				0ADE20E3246793E6009EC375 /* Foo.m in Sources */,
 				0ADE20DD246704D4009EC375 /* WXPerson1.m in Sources */,
 				0ADE20E0246793DA009EC375 /* Sark.m in Sources */,

@@ -6,54 +6,11 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "WXPerson.h"
 #import "Sark.h"
+#import "NSObject+Foo.h"
 #import <objc/message.h>
 #import <objc/runtime.h>
-
-@interface WXPerson : NSObject<SarkDelegate>
-
-@property(nonatomic, copy) NSString * name;
-
-@end
-
-@implementation WXPerson
-
-// 当我们实现load方式时，该class的引用就会被存放在__objc_nlclslist区中，在map_image(_read_images)阶段时该类&元类对象就会被初始化
-// 所以更加推荐使用initialize方法进行惰性初始化
-+ (void)load {
-    NSLog(@"%@: %@", NSStringFromClass(self), NSStringFromSelector(_cmd));
-}
-
-+ (void)sark0 {
-    NSLog(@"method: %@", NSStringFromSelector(_cmd));
-}
-
-- (void)sark1 {
-    NSLog(@"method: %@", NSStringFromSelector(_cmd));
-}
-
-- (void)sark2 {
-    NSLog(@"method: %@", NSStringFromSelector(_cmd));
-}
-
-@end
-
-
-@interface NSObject (Foo)
-
-+ (void)foo;
-
-@end
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored"-Weverything"
-@implementation NSObject (Foo)
-#pragma clang diagnostic pop
-- (void)foo {
-    NSLog(@"foo");
-}
-
-@end
 
 #ifdef __LP64__
 #   define WORD_SHIFT 3UL
@@ -79,9 +36,13 @@ struct test_ivar_t {
     }
 };
 
-__attribute__((constructor)) static void beforeFunction()
+static __attribute__((constructor)) void beforeFunction()
 {
     printf("beforeFunction\n");
+}
+static __attribute__((destructor)) void afterFunction()
+{
+    printf("afterFunction\n");
 }
 
 
@@ -105,6 +66,21 @@ void deepinIvarLayout() {
     }
     printf("\n");
     NSLog(@"=========Deep in Ivar Layout End  ==========");
+}
+
+void deepinMethodList() {
+    NSLog(@"=========Deep in Method List Begin ==========");
+    Class cls = [WXPerson class];
+    unsigned int count = 0;
+    Method * mlist = class_copyMethodList(cls, &count);
+    for (unsigned int i = 0; i < count; i++) {
+        Method meth = mlist[i];
+        SEL methname = method_getName(meth);
+        NSLog(@"%@", NSStringFromSelector(methname));
+    }
+    
+    free(mlist);
+    NSLog(@"=========Deep in Method List End  ==========");
 }
 
 static void fixup_class_arc(Class cls) {
@@ -191,6 +167,8 @@ int main(int argc, const char * argv[]) {
         NSLog(@"直接读写内存: %@ %@", *newObj_ivar1_ref, *newObj_ivar2_ref);
         #pragma clang diagnostic pop
         WXPerson *person = [WXPerson new];
+        
+        deepinMethodList();
         
 //        [person performSelector:NSSelectorFromString(@"testForwardMethod")];
         

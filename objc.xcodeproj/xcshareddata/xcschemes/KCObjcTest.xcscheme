@@ -57,9 +57,14 @@
             isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
-            key = "OBJC_PRINT_LOAD_METHODS"
+            key = "OBJC_PRINT_CXX_CTORS"
             value = "YES"
             isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "OBJC_PRINT_LOAD_METHODS"
+            value = "YES"
+            isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "OBJC_PRINT_CLASS_SETUP"
