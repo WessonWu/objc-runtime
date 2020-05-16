@@ -966,6 +966,7 @@ static inline bool operator != (DisguisedPtr<objc_object> lhs, id rhs) {
 // T1: store to old variable; store-release to hook variable
 // T2: load-acquire from hook variable; call it; called hook loads old variable
 
+// 存储一个线程安全的链式hook函数
 template <typename Fn>
 class ChainedHookFunction {
     std::atomic<Fn> hook{nil};

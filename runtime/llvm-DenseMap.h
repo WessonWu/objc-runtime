@@ -268,6 +268,8 @@ public:
   //DenseMap最终也会调用LookupBucketFor()来寻找插入位置，只是有可能插入的时候，桶数量不足，导致需要扩充新的桶以至于重新分配内存，插入的入口为insert()，具体的插入过程中由try_emplace()完成，是in-place式的插入。try_emplace()模拟了c++17中的std::map::try_emplace
   
   //DenseMap::try_emplace提供了左值和右值的两个版本，但是逻辑相同，首先使用Key查询map中是否已经存在了相同的键值，如果存在则返回<Iterator,false>，如果不存在则调用InsertIntoBucket()，该函数执行真正的插入操作，如果有需求的话则重新分配内存。
+  // 返回DenseMapIterator<KeyT, ValueT, DenseMapValueInfo<ValueT>, DenseMapInfo<KeyT>, detail::DenseMapPair<KeyT, ValueT>>
+  // DenseMapIterator重载了->符号，返回std::conditional<false, const detail::DenseMapPair<KeyT, ValueT>>, detail::DenseMapPair<KeyT, ValueT>>>::type * 即: detail::DenseMapPair<KeyT, ValueT> *
   template <typename... Ts>
   std::pair<iterator, bool> try_emplace(const KeyT &Key, Ts &&... Args) {
     BucketT *TheBucket;

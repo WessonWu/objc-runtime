@@ -155,21 +155,29 @@ _object_get_associative_reference(id object, const void *key)
     return association.autoreleaseReturnedValue();
 }
 
+/**
+ objc_setAssociatedObject 实际实现
+ */
 void
 _object_set_associative_reference(id object, const void *key, id value, uintptr_t policy)
 {
     // This code used to work when nil was passed for object and key. Some code
     // probably relies on that to not crash. Check and handle it explicitly.
     // rdar://problem/44094390
+    // 判断object不为NULL且value也不为NULL
     if (!object && !value) return;
 
+    // 判断object是否属于禁用关联对象的类
     if (object->getIsa()->forbidsAssociatedObjects())
         _objc_fatal("objc_setAssociatedObject called on instance (%p) of class %s which does not allow associated objects", object, object_getClassName(object));
 
+    // 封装指针
     DisguisedPtr<objc_object> disguised{(objc_object *)object};
+    // 封装关联对象 （包括内存语义）
     ObjcAssociation association{policy, value};
 
     // retain the new value (if any) outside the lock.
+    // 针对新的值进行
     association.acquireValue();
 
     {
@@ -178,14 +186,18 @@ _object_set_associative_reference(id object, const void *key, id value, uintptr_
 
         if (value) {
             auto refs_result = associations.try_emplace(disguised, ObjectAssociationMap{});
+            // 判断该对象第一次插入关联对象Map
             if (refs_result.second) {
                 /* it's the first association we make */
                 object->setHasAssociatedObjects();
             }
 
             /* establish or replace the association */
+            // 获取对象的ObjectAssociationMap
             auto &refs = refs_result.first->second;
+            // 根据key从ObjectAssociationMap中获取ObjcAssociation
             auto result = refs.try_emplace(key, std::move(association));
+            // 如果已经存在，则新的ObjcAssociation和旧的ObjcAssociation进行交换，旧的ObjcAssociation后面要进行释放
             if (!result.second) {
                 association.swap(result.first->second);
             }

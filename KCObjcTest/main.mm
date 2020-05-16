@@ -83,6 +83,14 @@ void deepinMethodList() {
     NSLog(@"=========Deep in Method List End  ==========");
 }
 
+
+static const void *kWXPersonAssociatedFullnameKey = "WXPersonAssociatedFullname";
+// hook保留之前的旧值然后在新的hook函数中调用它
+static objc_hook_setAssociatedObject wxperson_old_setAssociatedObject;
+void wxperson_hook_setAssociatedObject(id object, const void *key, id value, objc_AssociationPolicy policy) {
+    wxperson_old_setAssociatedObject(object, key, value, policy);
+}
+
 static void fixup_class_arc(Class cls) {
     struct {
         Class isa;
@@ -173,6 +181,13 @@ int main(int argc, const char * argv[]) {
 //        [person performSelector:NSSelectorFromString(@"testForwardMethod")];
         
         NSLog(@"isKindOfClass: %@, isMemberOfClass: %@", @([person isKindOfClass:[WXPerson class]]), @([person isMemberOfClass:[WXPerson class]]));
+        
+        
+        
+        // 深入objc_setAssociatedObject
+        objc_setHook_setAssociatedObject(wxperson_hook_setAssociatedObject, &wxperson_old_setAssociatedObject);
+        objc_setAssociatedObject(person, kWXPersonAssociatedFullnameKey, @"Lebron James", OBJC_ASSOCIATION_COPY_NONATOMIC);
+        NSLog(@"person associated fullname: %@", objc_getAssociatedObject(person, kWXPersonAssociatedFullnameKey));
         
 //        __autoreleasing WXPerson *person = [[WXPerson alloc] init];
 //        person.name = @"James";
